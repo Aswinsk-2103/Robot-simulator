@@ -1,0 +1,19 @@
+{
+  "name": "files",
+  "version": "1.0.0",
+  "description": "A complete, production-ready Python implementation of an interactive 3-DOF robotic arm simulator featuring Forward Kinematics (FK), Inverse Kinematics (IK), and real-time 3D visualization.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "three": "^0.185.1",
+    "vite": "^8.2.2"
+  }
+}

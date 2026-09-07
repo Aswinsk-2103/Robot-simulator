@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3-DOF Robotic Arm Simulator | Open3D & WebGL</title>
+  <meta name="description" content="Interactive 3-DOF Robotic Arm Simulator featuring Forward Kinematics (FK), Inverse Kinematics (IK), Jacobian Matrix Computation, and Real-time 3D Trajectory Animation." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Top Navigation & Title Bar -->
+    <header class="top-bar">
+      <div class="brand">
+        <div class="logo-icon">🤖</div>
+        <div class="brand-text">
+          <h1>3-DOF Robotic Arm Simulator</h1>
+          <div class="badges">
+            <span class="badge badge-primary">Kinematics Engine</span>
+            <span class="badge badge-success">Vite + Three.js</span>
+            <span class="badge badge-info" id="fps-badge">60 FPS</span>
+          </div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="btn-reset-view" class="btn btn-secondary" title="Reset 3D Camera View">
+          <span>🎥 Reset View</span>
+        </button>
+        <button id="btn-home-pose" class="btn btn-secondary" title="Return to Home Pose (0,0,0)">
+          <span>🏠 Home Pose</span>
+        </button>
+        <button id="btn-toggle-target" class="btn btn-secondary" title="Toggle Target Marker">
+          <span>🎯 Toggle Marker</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace (3D Viewport + Floating Side Panel) -->
+    <main class="workspace">
+      <!-- 3D Canvas Viewport Container -->
+      <div id="canvas-container"></div>
+
+      <!-- Real-time HUD Overlay (Bottom-Left) -->
+      <div class="hud-overlay">
+        <div class="hud-card">
+          <div class="hud-label">END-EFFECTOR POSE (X, Y, Z)</div>
+          <div class="hud-value" id="hud-pos">X: 0.700m | Y: 0.000m | Z: 0.300m</div>
+        </div>
+        <div class="hud-card">
+          <div class="hud-label">EULER ORIENTATION (Rx, Ry, Rz)</div>
+          <div class="hud-value" id="hud-rot">Rx: 0.0° | Ry: 0.0° | Rz: 0.0°</div>
+        </div>
+        <div class="hud-card">
+          <div class="hud-label">REACH RADIUS & STATUS</div>
+          <div class="hud-value highlight" id="hud-reach">R: 0.762m / 1.000m (Reachable)</div>
+        </div>
+      </div>
+
+      <!-- Control Side Panel -->
+      <aside class="control-panel">
+        <!-- Navigation Tabs -->
+        <nav class="panel-tabs">
+          <button class="tab-btn active" data-tab="tab-fk">FK Mode</button>
+          <button class="tab-btn" data-tab="tab-ik">IK Mode</button>
+          <button class="tab-btn" data-tab="tab-traj">Trajectory</button>
+          <button class="tab-btn" data-tab="tab-matrix">Inspector</button>
+        </nav>
+
+        <div class="panel-content">
+          <!-- TAB 1: Forward Kinematics (FK) -->
+          <section id="tab-fk" class="tab-pane active">
+            <div class="section-title">
+              <h3>Forward Kinematics (FK)</h3>
+              <p>Directly control joint angles $(\theta_1, \theta_2, \theta_3)$ to evaluate arm position.</p>
+            </div>
+
+            <!-- Joint Sliders -->
+            <div class="control-group">
+              <div class="control-header">
+                <label for="slider-j1">Joint 1 ($\theta_1$ Base Yaw)</label>
+                <span class="val-display" id="val-j1">0°</span>
+              </div>
+              <div class="input-row">
+                <input type="range" id="slider-j1" min="-180" max="180" value="0" step="1" />
+                <input type="number" id="num-j1" min="-180" max="180" value="0" step="1" class="num-input" />
+              </div>
+              <span class="help-text">Limits: -180° to +180°</span>
+            </div>
+
+            <div class="control-group">
+              <div class="control-header">
+                <label for="slider-j2">Joint 2 ($\theta_2$ Shoulder Pitch)</label>
+                <span class="val-display" id="val-j2">0°</span>
+              </div>
+              <div class="input-row">
+                <input type="range" id="slider-j2" min="-90" max="90" value="0" step="1" />
+                <input type="number" id="num-j2" min="-90" max="90" value="0" step="1" class="num-input" />
+              </div>
+              <span class="help-text">Limits: -90° to +90°</span>
+            </div>
+
+            <div class="control-group">
+              <div class="control-header">
+                <label for="slider-j3">Joint 3 ($\theta_3$ Elbow Pitch)</label>
+                <span class="val-display" id="val-j3">0°</span>
+              </div>
+              <div class="input-row">
+                <input type="range" id="slider-j3" min="-90" max="90" value="0" step="1" />
+                <input type="number" id="num-j3" min="-90" max="90" value="0" step="1" class="num-input" />
+              </div>
+              <span class="help-text">Limits: -90° to +90°</span>
+            </div>
+
+            <!-- FK Presets -->
+            <div class="presets-section">
+              <label class="presets-label">Preset Joint Poses:</label>
+              <div class="preset-buttons">
+                <button class="btn btn-preset" data-fk="0,0,0">Zero (0,0,0)</button>
+                <button class="btn btn-preset" data-fk="45,30,-30">Reach Up (45,30,-30)</button>
+                <button class="btn btn-preset" data-fk="-60,45,45">Side High (-60,45,45)</button>
+                <button class="btn btn-preset" data-fk="90,-30,-45">Pick Pose (90,-30,-45)</button>
+                <button class="btn btn-preset" data-fk="0,-60,60">Folded (0,-60,60)</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 2: Inverse Kinematics (IK) -->
+          <section id="tab-ik" class="tab-pane">
+            <div class="section-title">
+              <h3>Inverse Kinematics (IK)</h3>
+              <p>Numerical optimization solver (SLSQP/Damped Least Squares) to target Cartesian coordinates.</p>
+            </div>
+
+            <!-- Target Inputs Grid -->
+            <div class="target-grid">
+              <div class="input-field">
+                <label for="ik-x">Target X (m)</label>
+                <input type="number" id="ik-x" value="0.40" step="0.05" />
+              </div>
+              <div class="input-field">
+                <label for="ik-y">Target Y (m)</label>
+                <input type="number" id="ik-y" value="0.00" step="0.05" />
+              </div>
+              <div class="input-field">
+                <label for="ik-z">Target Z (m)</label>
+                <input type="number" id="ik-z" value="0.30" step="0.05" />
+              </div>
+              <div class="input-field">
+                <label for="ik-rx">Rx (°)</label>
+                <input type="number" id="ik-rx" value="0" step="5" />
+              </div>
+              <div class="input-field">
+                <label for="ik-ry">Ry (°)</label>
+                <input type="number" id="ik-ry" value="0" step="5" />
+              </div>
+              <div class="input-field">
+                <label for="ik-rz">Rz (°)</label>
+                <input type="number" id="ik-rz" value="0" step="5" />
+              </div>
+            </div>
+
+            <!-- Action Button -->
+            <button id="btn-solve-ik" class="btn btn-primary btn-block">
+              <span>⚡ Solve & Move IK</span>
+            </button>
+
+            <!-- Status Indicator -->
+            <div class="solver-status-card" id="ik-status-card">
+              <div class="status-header">
+                <span class="status-dot green" id="ik-status-dot"></span>
+                <span class="status-text" id="ik-status-text">Ready to solve</span>
+              </div>
+              <div class="status-details" id="ik-status-details">
+                Click Solve to compute joint angles for target pose.
+              </div>
+            </div>
+
+            <!-- IK Presets -->
+            <div class="presets-section">
+              <label class="presets-label">IK Target Examples:</label>
+              <div class="preset-buttons">
+                <button class="btn btn-preset" data-ik="0.4,0.0,0.3,0,0,0">Forward Reach</button>
+                <button class="btn btn-preset" data-ik="0.3,0.2,0.4,0,0,0">Elevated Side</button>
+                <button class="btn btn-preset" data-ik="0.2,0.3,0.3,0,0,0">Close Side</button>
+                <button class="btn btn-preset" data-ik="0.5,0.0,0.1,0,0,0">Low Forward</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 3: Trajectory Animation -->
+          <section id="tab-traj" class="tab-pane">
+            <div class="section-title">
+              <h3>Trajectory Task Execution</h3>
+              <p>Sequential multi-point interpolation and animated pose tracking.</p>
+            </div>
+
+            <!-- Waypoint List Preview -->
+            <div class="waypoints-list">
+              <div class="waypoint-card">
+                <span class="wp-num">WP 1</span>
+                <span class="wp-pos">(0.40, 0.00, 0.30)</span>
+                <span class="wp-tag">Forward reach</span>
+              </div>
+              <div class="waypoint-card">
+                <span class="wp-num">WP 2</span>
+                <span class="wp-pos">(0.30, 0.20, 0.40)</span>
+                <span class="wp-tag">Elevated side</span>
+              </div>
+              <div class="waypoint-card">
+                <span class="wp-num">WP 3</span>
+                <span class="wp-pos">(0.20, 0.30, 0.30)</span>
+                <span class="wp-tag">Close reach</span>
+              </div>
+              <div class="waypoint-card">
+                <span class="wp-num">WP 4</span>
+                <span class="wp-pos">(0.40, 0.00, 0.30)</span>
+                <span class="wp-tag">Return home</span>
+              </div>
+            </div>
+
+            <!-- Animation Controls -->
+            <div class="control-group">
+              <div class="control-header">
+                <label for="slider-speed">Animation Interpolation Steps</label>
+                <span class="val-display" id="val-speed">60 steps</span>
+              </div>
+              <input type="range" id="slider-speed" min="20" max="150" value="60" step="5" />
+            </div>
+
+            <button id="btn-execute-traj" class="btn btn-accent btn-block">
+              <span>▶ Execute Multi-Point Trajectory</span>
+            </button>
+
+            <!-- Trajectory Progress Bar -->
+            <div class="progress-bar-container" id="traj-progress-box">
+              <div class="progress-info">
+                <span id="traj-status-lbl">Idle</span>
+                <span id="traj-percent">0%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" id="traj-progress-fill"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 4: Kinematics Inspector -->
+          <section id="tab-matrix" class="tab-pane">
+            <div class="section-title">
+              <h3>Kinematics Inspector</h3>
+              <p>4x4 Homogeneous Transformation Matrix and 6x3 Jacobian.</p>
+            </div>
+
+            <div class="matrix-block">
+              <h4>End-Effector Transform $T_{0 \to EE}$ (4x4)</h4>
+              <pre class="code-box" id="matrix-t0ee">Loading matrix...</pre>
+            </div>
+
+            <div class="matrix-block">
+              <h4>Numerical Jacobian Matrix $J(\theta)$ (6x3)</h4>
+              <pre class="code-box" id="matrix-jacobian">Loading jacobian...</pre>
+            </div>
+          </section>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
