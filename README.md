@@ -8,7 +8,25 @@ A complete, production-ready interactive 3-DOF (Degree of Freedom) Robotic Arm S
 ![Simulator Preview](https://img.shields.io/badge/Three.js-WebGL-00f2fe?style=for-the-badge&logo=three.js)
 ![Python](https://img.shields.io/badge/Python-3.7+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8.2.2-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Aswinsk-2103/Robot-simulator)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+
+---
+
+## 🚀 Live Render Deployment
+
+Deploy instantly to Render using the **1-Click Blueprint**:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Aswinsk-2103/Robot-simulator)
+
+### Manual Render Setup:
+1. Log in to **[Render.com](https://dashboard.render.com)**.
+2. Click **New +** → **Static Site**.
+3. Connect your GitHub repository: `Aswinsk-2103/Robot-simulator`.
+4. Configure build settings:
+   - **Build Command**: `npm run build`
+   - **Publish Directory**: `dist`
+5. Click **Create Static Site** — Render will automatically build and publish your live web URL!
 
 ---
 
